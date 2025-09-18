@@ -1,0 +1,48 @@
+# === Flutter / Dart ===
+# Build and intermediate files
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+.dart_tool/
+*.lock
+
+# iOS
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/.symlinks/
+ios/Pods/
+ios/Podfile.lock
+ios/Runner/GeneratedPluginRegistrant.*
+
+# Android
+android/.gradle/
+android/captures/
+android/gradlew
+android/gradlew.bat
+android/local.properties
+android/.idea/
+android/app/build/
+
+# === Node.js (backend) ===
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+.pnpm-debug.log*
+
+# === OS / IDE stuff ===
+.DS_Store
+Thumbs.db
+*.iml
+.idea/
+.vscode/
+*.swp
+
+# === Misc ===
+.env
+.env.local
+.env.*.local
