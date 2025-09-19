@@ -33,7 +33,8 @@ import dotenv from "dotenv";
 import cors from "cors";
 
 import authRoutes from "./routes/auth.js";
-import assetRoutes from "./routes/Asset.js";  
+import assetRoutes from "./routes/Asset.js"; 
+ 
 
 dotenv.config();
 const app = express();

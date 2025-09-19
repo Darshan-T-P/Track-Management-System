@@ -1,56 +1,8 @@
-from pydantic import BaseModel
-from typing import List, Optional
-from datetime import datetime
-
-
-class Inspection(BaseModel):
-    date: datetime
-    inspector: str
-    remarks: str
-
-
-class Review(BaseModel):
-    reviewer: str
-    date: datetime
-    feedback: str
-    image: Optional[str] = None  # URL or path to image
-    rating: int  # 1-5 scale
-
-
-class ProductDetails(BaseModel):
-    # Manufacturing details
-    manufacturer: str
-    lot_number: str
-    batch_id: Optional[str] = None
-    date_of_manufacture: datetime
-
-    # Supply details
-    vendor: str
-    date_of_supply: datetime
-    warranty_period: str
-
-    # Installation details
-    installation_date: datetime
-    installation_location: str
-    installed_by: str
-
-    # Inspection history
-    inspections: List[Inspection] = []
-
-    # Reviews / performance feedback
-    reviews: List[Review] = []
-
-    # Additional fields for product info
-    product_name: str
-    description: Optional[str] = None
-    category: Optional[str] = None
-    serial_number: Optional[str] = None
-
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List, Optional
+from pydantic import BaseModel, conint
+from typing import List, Optional, Literal
 from datetime import datetime
 from pymongo import MongoClient
 from uuid import uuid4
@@ -66,27 +18,57 @@ products_collection = db["products"]
 class Inspection(BaseModel):
     date: datetime
     inspector: str
-    remarks: str
+    remarks: Optional[str] = None
+    status: Literal["Passed", "Failed", "Pending"]  
+
 
 class Review(BaseModel):
     reviewer: str
-    date: datetime
+    date: Optional[datetime]=None
     feedback: str
-    rating: int
+    rating: conint(ge=1, le=5) 
+    image: Optional[str] = None
+
 
 class ProductDetails(BaseModel):
-    manufacturer: str
+    # Identification
+    product_name: str
+    item_type: Literal["Clip", "Pad", "Liner", "Sleeper"]
     lot_number: str
     batch_id: Optional[str] = None
+    tms_lot_reference: Optional[str] = None
+
+    # Manufacturing
+    manufacturer: str
+    manufacturer_id: Optional[str] = None
     date_of_manufacture: datetime
+
+    # Supply
     vendor: str
+    vendor_id: Optional[str] = None
     date_of_supply: datetime
-    warranty_period: str
+
+    # Warranty
+    warranty_start_date: datetime
+    warranty_end_date: datetime
+
+    # Installation
     installation_date: datetime
     installation_location: str
     installed_by: str
+
+    # Inspection history
     inspections: List[Inspection] = []
+    last_inspection_date: Optional[datetime] = None
+
+    # Reviews
     reviews: List[Review] = []
+
+    # Extra
+    description: Optional[str] = None
+    category: Optional[str] = None
+    serial_number: Optional[str] = None
+
 
 # ---------------- FastAPI ----------------
 app = FastAPI(title="Railway QR System")
@@ -102,6 +84,10 @@ app.add_middleware(
 QR_DIR = "qr_codes"
 os.makedirs(QR_DIR, exist_ok=True)
 
+
+# ---------------- API Routes ----------------
+
+# 1. Initialize a product (generate QR + UUID)
 @app.post("/products/init")
 def init_product():
     product_id = str(uuid4())
@@ -116,23 +102,60 @@ def init_product():
         "details": None
     })
 
-    return {"uuid": product_id, "qr_code_url": f"http://127.0.0.1:8000/products/{product_id}/qr"}
+    return {
+        "uuid": product_id,
+        "qr_code_url": f"http://127.0.0.1:8000/products/{product_id}/qr"
+    }
 
+
+# 2. Add product details
 @app.post("/products/{uuid}/details")
-def add_product_details(uuid: str, details: ProductDetails):
-    product = products_collection.find_one({"uuid": uuid})
-    if not product:
-        raise HTTPException(404, "Product not found")
-    if product.get("details_entered", False):
-        raise HTTPException(400, "Details already added")
+async def add_product_details(uuid: str, details: ProductDetails):
+    try:
+        product = products_collection.find_one({"uuid": uuid})
+        if not product:
+            return JSONResponse(
+                status_code=404,
+                content={"success": False, "message": "Product not found"}
+            )
 
-    products_collection.update_one(
-        {"uuid": uuid},
-        {"$set": {"details": details.dict(), "details_entered": True}}
-    )
-    return {"message": "Product details added successfully"}
+        if product.get("details_entered", False):
+            return JSONResponse(
+                status_code=400,
+                content={"success": False, "message": "Details already added"}
+            )
 
-# ---------------- GET PRODUCT (SCANNING) ---------------- 
+        details_dict = details.dict()
+
+        if details.inspections:
+            details_dict["last_inspection_date"] = max(
+                ins.date for ins in details.inspections
+            )
+
+        products_collection.update_one(
+            {"uuid": uuid},
+            {
+                "$set": {
+                    "details": details_dict,
+                    "details_entered": True,
+                    "updated_at": datetime.utcnow(),
+                }
+            },
+        )
+
+        return JSONResponse(
+            status_code=200,
+            content={"success": True, "message": "Product details added successfully"}
+        )
+
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": f"Error: {str(e)}"}
+        )
+
+
+# 3. Get product details (scan QR)
 @app.get("/products/{uuid}")
 def get_product(uuid: str):
     product = products_collection.find_one({"uuid": uuid}, {"_id": 0})
@@ -140,7 +163,8 @@ def get_product(uuid: str):
         raise HTTPException(404, "Product not found")
     return product
 
-# ---------------- GET QR IMAGE ----------------
+
+# 4. Get QR code image
 @app.get("/products/{uuid}/qr")
 def get_qr(uuid: str):
     qr_path = os.path.join(QR_DIR, f"{uuid}.png")
@@ -148,34 +172,60 @@ def get_qr(uuid: str):
         raise HTTPException(404, "QR not found")
     return FileResponse(qr_path, media_type="image/png")
 
-# ---------------- ADD REVIEW ----------------
+
+# 5. Add a review
 @app.post("/products/{uuid}/reviews")
 def add_review(uuid: str, review: Review):
     product = products_collection.find_one({"uuid": uuid})
     if not product:
-        raise HTTPException(404, "Product not found")
+        raise HTTPException(status_code=404, detail="Product not found")
+
     if not product.get("details_entered", False):
-        raise HTTPException(400, "Cannot add review before product details")
+        raise HTTPException(status_code=400, detail="Cannot add review before product details are entered")
+
+    review_dict = review.dict()
+    if not review_dict.get("date"):
+        review_dict["date"] = datetime.utcnow()
 
     products_collection.update_one(
         {"uuid": uuid},
-        {"$push": {"details.reviews": review.dict()}}
+        {"$push": {"details.reviews": review_dict}}
     )
-    return {"message": "Review added successfully"}
 
-# ---------------- UPDATE PRODUCT DETAILS (IF NOT FILLED) ----------------
-@app.post("/update_product/{uuid}")
+    return {"message": "Review added successfully", "review": review_dict}
+
+
+# 6. Add an inspection
+@app.post("/products/{uuid}/inspections")
+def add_inspection(uuid: str, inspection: Inspection):
+    product = products_collection.find_one({"uuid": uuid})
+    if not product:
+        raise HTTPException(404, "Product not found")
+    if not product.get("details_entered", False):
+        raise HTTPException(400, "Cannot add inspection before product details")
+
+    products_collection.update_one(
+        {"uuid": uuid},
+        {
+            "$push": {"details.inspections": inspection.dict()},
+            "$set": {"details.last_inspection_date": inspection.date}
+        }
+    )
+    return {"message": "Inspection added successfully"}
+
+
+# 7. Update product details (only if not filled)
+@app.post("/products/{uuid}/update")
 def update_product(uuid: str, details: ProductDetails):
     product = products_collection.find_one({"uuid": uuid})
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    # allow update only if details not already filled
-    if "manufacturer" in product:
+    if product.get("details_entered", False):
         raise HTTPException(status_code=400, detail="Details already filled")
 
     products_collection.update_one(
         {"uuid": uuid},
-        {"$set": details.dict()}
+        {"$set": {"details": details.dict(), "details_entered": True}}
     )
     return {"success": True, "message": "Product details updated"}

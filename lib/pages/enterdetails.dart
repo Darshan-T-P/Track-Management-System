@@ -6,24 +6,25 @@ class EnterProductDetailsScreen extends StatefulWidget {
   const EnterProductDetailsScreen({super.key, required this.uuid});
 
   @override
-  State<EnterProductDetailsScreen> createState() => _EnterProductDetailsScreenState();
+  State<EnterProductDetailsScreen> createState() =>
+      _EnterProductDetailsScreenState();
 }
 
 class _EnterProductDetailsScreenState extends State<EnterProductDetailsScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controllers for all fields
-  final TextEditingController _productNameController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _categoryController = TextEditingController();
-  final TextEditingController _manufacturerController = TextEditingController();
-  final TextEditingController _lotNumberController = TextEditingController();
-  final TextEditingController _batchController = TextEditingController();
-  final TextEditingController _vendorController = TextEditingController();
-  final TextEditingController _warrantyController = TextEditingController();
-  final TextEditingController _installedByController = TextEditingController();
-  final TextEditingController _installationLocationController = TextEditingController();
-  final TextEditingController _serialNumberController = TextEditingController();
+  // Text controllers
+  final _productNameController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _categoryController = TextEditingController();
+  final _manufacturerController = TextEditingController();
+  final _lotNumberController = TextEditingController();
+  final _batchController = TextEditingController();
+  final _vendorController = TextEditingController();
+  final _warrantyController = TextEditingController();
+  final _installedByController = TextEditingController();
+  final _installationLocationController = TextEditingController();
+  final _serialNumberController = TextEditingController();
 
   DateTime? _manufactureDate;
   DateTime? _installationDate;
@@ -31,21 +32,26 @@ class _EnterProductDetailsScreenState extends State<EnterProductDetailsScreen> {
 
   bool _isSubmitting = false;
 
-  Future<void> _pickDate(BuildContext context, TextEditingController controller, Function(DateTime) onPicked) async {
+  Future<void> _pickDate(BuildContext context, Function(DateTime) onPicked) async {
     final date = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
-    if (date != null) onPicked(date);
+    if (date != null) {
+      onPicked(date);
+      setState(() {}); // refresh UI
+    }
   }
 
-  void _submitDetails() async {
+  Future<void> _submitDetails() async {
     if (!_formKey.currentState!.validate()) return;
 
     if (_manufactureDate == null || _installationDate == null || _supplyDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select all dates')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select all dates')),
+      );
       return;
     }
 
@@ -66,25 +72,53 @@ class _EnterProductDetailsScreenState extends State<EnterProductDetailsScreen> {
       "installation_location": _installationLocationController.text,
       "installed_by": _installedByController.text,
       "serial_number": _serialNumberController.text,
-      "inspections": [],
-      "reviews": [],
     };
 
-    final result = await ApiService.addProductDetails(widget.uuid, details);
-    final bool success = result == true;
+    try {
+      final result = await ApiService.addProductDetails(widget.uuid, details);
 
-    setState(() => _isSubmitting = false);
+      setState(() => _isSubmitting = false);
 
-    if (success) {
+      if (result["success"] == true) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(result["message"] ?? "Details saved")),
+  );
+  Navigator.pop(context);
+} else {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(result["message"] ?? "Failed to add product details")),
+  );
+}
+    } catch (e) {
+      setState(() => _isSubmitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Product details added successfully")),
-      );
-      Navigator.pop(context);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Failed to add product details")),
+        SnackBar(content: Text("Error: $e")),
       );
     }
+  }
+
+  Widget _buildDateField(String label, DateTime? date, Function(DateTime) onPicked) {
+    return InkWell(
+      onTap: () => _pickDate(context, onPicked),
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+        ),
+        child: Text(date == null ? "Select date" : date.toLocal().toString().split(' ')[0]),
+      ),
+    );
+  }
+
+  Widget _buildTextField(String label, TextEditingController controller, {bool required = false}) {
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+      ),
+      validator: (v) => required && v!.isEmpty ? "Required" : null,
+    );
   }
 
   @override
@@ -97,65 +131,45 @@ class _EnterProductDetailsScreenState extends State<EnterProductDetailsScreen> {
           key: _formKey,
           child: ListView(
             children: [
-              TextFormField(
-                controller: _productNameController,
-                decoration: const InputDecoration(labelText: "Product Name"),
-                validator: (v) => v!.isEmpty ? "Required" : null,
-              ),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(labelText: "Description"),
-                validator: (v) => v!.isEmpty ? "Required" : null,
-              ),
-              TextFormField(
-                controller: _categoryController,
-                decoration: const InputDecoration(labelText: "Category"),
-                validator: (v) => v!.isEmpty ? "Required" : null,
-              ),
-              TextFormField(
-                controller: _manufacturerController,
-                decoration: const InputDecoration(labelText: "Manufacturer"),
-                validator: (v) => v!.isEmpty ? "Required" : null,
-              ),
-              TextFormField(
-                controller: _lotNumberController,
-                decoration: const InputDecoration(labelText: "Lot Number"),
-                validator: (v) => v!.isEmpty ? "Required" : null,
-              ),
-              TextFormField(
-                controller: _batchController,
-                decoration: const InputDecoration(labelText: "Batch ID"),
-              ),
-              TextFormField(
-                controller: _vendorController,
-                decoration: const InputDecoration(labelText: "Vendor"),
-              ),
-              TextFormField(
-                controller: _warrantyController,
-                decoration: const InputDecoration(labelText: "Warranty Period"),
-              ),
-              TextFormField(
-                controller: _installedByController,
-                decoration: const InputDecoration(labelText: "Installed By"),
-              ),
-              TextFormField(
-                controller: _installationLocationController,
-                decoration: const InputDecoration(labelText: "Installation Location"),
-              ),
-              TextFormField(
-                controller: _serialNumberController,
-                decoration: const InputDecoration(labelText: "Serial Number"),
-              ),
+              const Text("Product Info", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              _buildTextField("Product Name", _productNameController, required: true),
               const SizedBox(height: 12),
-              ElevatedButton(
-                  onPressed: () => _pickDate(context, TextEditingController(), (date) => _manufactureDate = date),
-                  child: Text(_manufactureDate == null ? "Pick Manufacture Date" : _manufactureDate.toString())),
-              ElevatedButton(
-                  onPressed: () => _pickDate(context, TextEditingController(), (date) => _installationDate = date),
-                  child: Text(_installationDate == null ? "Pick Installation Date" : _installationDate.toString())),
-              ElevatedButton(
-                  onPressed: () => _pickDate(context, TextEditingController(), (date) => _supplyDate = date),
-                  child: Text(_supplyDate == null ? "Pick Supply Date" : _supplyDate.toString())),
+              _buildTextField("Description", _descriptionController, required: true),
+              const SizedBox(height: 12),
+              _buildTextField("Category", _categoryController),
+
+              const SizedBox(height: 20),
+              const Text("Manufacturing", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              _buildTextField("Manufacturer", _manufacturerController, required: true),
+              const SizedBox(height: 12),
+              _buildTextField("Lot Number", _lotNumberController, required: true),
+              const SizedBox(height: 12),
+              _buildTextField("Batch ID", _batchController),
+              const SizedBox(height: 12),
+              _buildDateField("Date of Manufacture", _manufactureDate, (d) => _manufactureDate = d),
+
+              const SizedBox(height: 20),
+              const Text("Supply", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              _buildTextField("Vendor", _vendorController),
+              const SizedBox(height: 12),
+              _buildDateField("Date of Supply", _supplyDate, (d) => _supplyDate = d),
+              const SizedBox(height: 12),
+              _buildTextField("Warranty Period", _warrantyController),
+
+              const SizedBox(height: 20),
+              const Text("Installation", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              _buildDateField("Installation Date", _installationDate, (d) => _installationDate = d),
+              const SizedBox(height: 12),
+              _buildTextField("Installation Location", _installationLocationController),
+              const SizedBox(height: 12),
+              _buildTextField("Installed By", _installedByController),
+              const SizedBox(height: 12),
+              _buildTextField("Serial Number", _serialNumberController),
+
               const SizedBox(height: 20),
               _isSubmitting
                   ? const Center(child: CircularProgressIndicator())

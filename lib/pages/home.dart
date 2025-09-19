@@ -30,249 +30,165 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: const Text("Track Management System"),
         centerTitle: true,
         elevation: 0,
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.black87,
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : user == null
-          ? const Center(child: Text("No user info found"))
-          : SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // User Profile Header
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor,
-                      borderRadius: const BorderRadius.only(
-                        bottomLeft: Radius.circular(30),
-                        bottomRight: Radius.circular(30),
+              ? const Center(child: Text("No user info found"))
+              : Column(
+                  children: [
+                    // Top Welcome Gradient
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF6A11CB), Color(0xFF2575FC)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(40),
+                          bottomRight: Radius.circular(40),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          const Text(
+                            "Welcome !!",
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            user!['name'],
+                            style: const TextStyle(
+                              fontSize: 18,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    child: Column(
-                      children: [
-                        CircleAvatar(
-                          radius: 40,
-                          backgroundColor: Colors.white,
+
+                    const SizedBox(height: 40),
+
+                    // Big Scan QR Button
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const QRScannerScreen(),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: 160,
+                        height: 160,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF2575FC), Color(0xFF6A11CB)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 15,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: const Center(
                           child: Text(
-                            user!['name'][0].toUpperCase(),
+                            "Scan QR",
                             style: TextStyle(
-                              fontSize: 32,
-                              color: Theme.of(context).primaryColor,
+                              color: Colors.white,
+                              fontSize: 22,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          user!['name'],
-                          style: const TextStyle(
-                            fontSize: 24,
+                      ),
+                    ),
+
+                    const SizedBox(height: 50),
+
+                    // Reports Section Title
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          "Reports",
+                          style: TextStyle(
+                            fontSize: 22,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: Colors.grey[800],
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          user!['email'],
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.white70,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 4,
-                          ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Glassmorphic Reports Card
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.white24,
+                            color: Colors.white.withOpacity(0.9),
                             borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            user!['role'],
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Quick Actions Grid
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Quick Actions',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        GridView.count(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 16,
-                          crossAxisSpacing: 16,
-                          children: [
-                            _buildActionCard(
-                              context,
-                              'Scan QR Code',
-                              Icons.qr_code_scanner,
-                              Colors.blue,
-                              () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const QRScannerScreen(),
-                                ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
                               ),
-                            ),
-                            _buildActionCard(
-                              context,
-                              'New Inspection',
-                              Icons.add_task,
-                              Colors.green,
-                              () {},
-                            ),
-                            _buildActionCard(
-                              context,
-                              'View Reports',
-                              Icons.assessment,
-                              Colors.orange,
-                              () {},
-                            ),
-                            _buildActionCard(
-                              context,
-                              'Asset List',
-                              Icons.list_alt,
-                              Colors.purple,
-                              () {},
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Recent Activity Section
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Recent Activity',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                            ],
+                          ),
+                          child: ListView(
+                            padding: const EdgeInsets.all(12),
+                            children: const [
+                              ListTile(
+                                leading: Icon(Icons.description, color: Colors.blue),
+                                title: Text("Inspection Report #1"),
+                                subtitle: Text("2 days ago"),
+                                trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                              ),
+                              Divider(),
+                              ListTile(
+                                leading: Icon(Icons.build, color: Colors.green),
+                                title: Text("Maintenance Report #2"),
+                                subtitle: Text("5 days ago"),
+                                trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                              ),
+                              Divider(),
+                              ListTile(
+                                leading: Icon(Icons.warning, color: Colors.red),
+                                title: Text("Alert Report #3"),
+                                subtitle: Text("1 week ago"),
+                                trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        _buildActivityItem(
-                          'Inspection completed',
-                          'Platform 1 - Rail Section A',
-                          '2h ago',
-                          Icons.check_circle,
-                          Colors.green,
-                        ),
-                        _buildActivityItem(
-                          'New Asset Added',
-                          'Signal Control Unit #SCU-2024-01',
-                          '4h ago',
-                          Icons.add_circle,
-                          Colors.blue,
-                        ),
-                        _buildActivityItem(
-                          'Maintenance Alert',
-                          'Track Switch B needs inspection',
-                          '6h ago',
-                          Icons.warning,
-                          Colors.orange,
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-    );
-  }
-
-  Widget _buildActionCard(
-    BuildContext context,
-    String title,
-    IconData icon,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size: 32, color: color),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActivityItem(
-    String title,
-    String subtitle,
-    String time,
-    IconData icon,
-    Color color,
-  ) {
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icon, color: color),
-      ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-      subtitle: Text(subtitle),
-      trailing: Text(
-        time,
-        style: TextStyle(color: Colors.grey[600], fontSize: 12),
-      ),
+                  ],
+                ),
     );
   }
 }
