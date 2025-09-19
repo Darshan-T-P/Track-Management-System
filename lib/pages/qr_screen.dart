@@ -189,10 +189,11 @@
 //     );
 //   }
 // }
-
+// qr_scanner_screen.dart
 import 'package:flutter/material.dart';
-import 'dart:convert';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'enterdetails.dart';
+import 'qr_details.dart';
 import '../core/services/api_services.dart';
 
 class QRScannerScreen extends StatefulWidget {
@@ -214,35 +215,46 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
 
   setState(() => isProcessing = true);
 
-  // --- Step 1: Extract UUID from QR code ---
-  String? uuid;
+  // Extract UUID
+  String uuid;
   try {
     final uri = Uri.parse(qrCode);
-    // If QR contains full URL, get last path segment as UUID
     uuid = uri.pathSegments.isNotEmpty ? uri.pathSegments.last : qrCode;
   } catch (e) {
-    // If QR is just a raw UUID
     uuid = qrCode;
   }
 
-  if (uuid == null || uuid.isEmpty) {
-    debugPrint('UUID not found in QR code');
-    setState(() => isProcessing = false);
-    return;
-  }
-
-  // --- Step 2: Fetch product from FastAPI ---
+  // Fetch product
   Map<String, dynamic>? productData;
   try {
     productData = await ApiService.getProductByUuid(uuid);
   } catch (e) {
-    debugPrint('Error fetching product: $e');
+    productData = null;
   }
 
   if (!mounted) return;
 
-  // --- Step 3: Show product details or error ---
-  if (productData == null || productData['success'] != true) {
+  if (productData != null && productData['success'] == true) {
+    bool detailsEntered = productData['product']['details_entered'] ?? false;
+
+    if (!detailsEntered) {
+      // Navigate to enter details
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => EnterProductDetailsScreen(uuid: uuid),
+        ),
+      );
+    } else {
+      // Navigate to details view
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => QRDetailsScreen(uuid: uuid),
+        ),
+      );
+    }
+  } else {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -253,44 +265,32 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         ],
       ),
     );
-  } else {
-    final product = productData['product'];
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text('Product: ${product['uuid']}'),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('QR Code URL: ${product['qr_code_url']}'),
-              Text('Details Entered: ${product['details_entered']}'),
-              const SizedBox(height: 8),
-              if (product['details'] != null)
-                Text('Details:\n${jsonEncode(product['details'])}'),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
-        ],
-      ),
-    );
   }
 
-  // --- Step 4: Reset scanning state ---
   Future.delayed(const Duration(seconds: 2), () {
     if (mounted) setState(() => isProcessing = false);
   });
 }
 
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Scan Asset QR")),
-      body: MobileScanner(onDetect: _onDetect),
+      appBar: AppBar(title: const Text("Scan Product QR")),
+      body: Stack(
+        children: [
+          MobileScanner(
+            onDetect: _onDetect,
+          ),
+          if (isProcessing)
+            Container(
+              color: Colors.black45,
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

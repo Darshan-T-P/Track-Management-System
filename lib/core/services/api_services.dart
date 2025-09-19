@@ -88,41 +88,41 @@ class ApiService {
     }
     return null;
   }
-
- static Future<Map<String, dynamic>?> getProduct(String uuid) async {
-    final token = await storage.read("token");
-    final response = await http.get(
-      Uri.parse("$baseUrl/products/$uuid"),
-      headers: {
-        'Authorization': token != null ? 'Bearer $token' : '',
-        'Content-Type': 'application/json',
-      },
+ static Future<Map<String, dynamic>> addProductDetails(
+      String uuid, Map<String, dynamic> details) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/products/$uuid/details'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(details),
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else if (response.statusCode == 404) {
-      return null; // Product not found
+      return json.decode(response.body);
+    } else if (response.statusCode == 400 || response.statusCode == 404) {
+      // Return API error detail
+      return json.decode(response.body);
     } else {
-      debugPrint('Error fetching product: ${response.body}');
-      return null;
+      throw Exception('Failed to add product details');
     }
   }
 
-  /// Add product details after first scan
-  static Future<bool> addProductDetails(String uuid, Map<String, dynamic> details) async {
-    final token = await storage.read("token");
+  /// ---------------- ADD REVIEW ----------------
+  static Future<Map<String, dynamic>> addReview(
+      String uuid, Map<String, dynamic> review) async {
     final response = await http.post(
-      Uri.parse("$baseUrl/products/$uuid/details"),
-      headers: {
-        'Authorization': token != null ? 'Bearer $token' : '',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode(details),
+      Uri.parse('$baseUrl/products/$uuid/reviews'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(review),
     );
-    return response.statusCode == 200;
-  }
 
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else if (response.statusCode == 400 || response.statusCode == 404) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to add review');
+    }
+  }
 
   static Future<void> logout() async {
     await storage.delete("token");
