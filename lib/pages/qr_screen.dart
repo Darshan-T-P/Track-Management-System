@@ -72,7 +72,7 @@
 //               ),
 //             ),
 //           ),
-          
+
 //           // Scanning overlay
 //           if (_isScanning)
 //             Container(
@@ -85,7 +85,7 @@
 //                 ),
 //               ),
 //             ),
-          
+
 //           // Bottom controls
 //           Positioned(
 //             bottom: 0,
@@ -193,6 +193,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:tms/core/services/api_services.dart';
+import './enterdetails.dart';
 
 import 'assetdetails.dart';
 
@@ -207,29 +208,46 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
   bool isProcessing = false;
 
   void _onDetect(BarcodeCapture capture) async {
-    if (isProcessing) return;
-    final qrCode = capture.barcodes.first.rawValue ?? "";
-    if (qrCode.isEmpty) return;
+  if (isProcessing) return;
 
-    setState(() => isProcessing = true);
+  if (capture.barcodes.isEmpty) return; // Prevent "No element" error
 
-    final assetData = await ApiService.getAsset(qrCode);
+  final qrCode = capture.barcodes.first.rawValue;
+  if (qrCode == null || qrCode.isEmpty) return; // Prevent "Cannot send Null"
 
-    if (!mounted) return;
-    if (assetData != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => AssetDetailScreen(asset: assetData),
-        ),
-      );
+  setState(() => isProcessing = true);
+
+  try {
+    final productData = await ApiService.getProduct(qrCode);
+
+    if (productData != null) {
+      if (productData['details_entered'] == false) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => EnterProductDetailsScreen(uuid: qrCode),
+          ),
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AssetDetailScreen(asset: productData),
+          ),
+        );
+      }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Asset not found")),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Product not found")));
     }
+  } catch (e) {
+    debugPrint('Error fetching product: $e');
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text("Error fetching product")));
+  } finally {
     setState(() => isProcessing = false);
   }
+}
 
   @override
   Widget build(BuildContext context) {

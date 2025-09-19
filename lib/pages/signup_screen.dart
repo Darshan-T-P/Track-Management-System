@@ -422,7 +422,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   setState(() => _isLoading = true);
 
   try {
-    final deviceInfo = await DeviceInfoHelper.getDeviceInfo();
+    final deviceInfo = DeviceInfoHelper.getDeviceInfo();
     final signupRequest = SignupRequest(
       name: _nameController.text.trim(),
       email: _emailController.text.trim(),
@@ -430,8 +430,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       confirmPassword: _confirmPasswordController.text,
       phone: _phoneController.text.trim(),
       // employeeCode: _employeeCodeController.text.trim(),
-      role: _selectedRole!,
-      zoneId: _selectedZone!,
+      role: _selectedRole,
+      zoneId: _selectedZone,
       divisionId: _selectedDivision,
       stationId: _selectedStation,
       deviceInfo: deviceInfo,

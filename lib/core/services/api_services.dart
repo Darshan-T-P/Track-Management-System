@@ -470,46 +470,36 @@ class ApiService {
     return null;
   }
 
-  // Get asset details by QR Code
-  static Future<Map<String, dynamic>?> getAsset(String qrCode) async {
-    final token = await StorageService().read('token');
+ static Future<Map<String, dynamic>?> getProduct(String uuid) async {
+    final token = await storage.read("token");
     final response = await http.get(
-      Uri.parse("$baseUrl/assets/$qrCode"),
+      Uri.parse("$baseUrl/products/$uuid"),
       headers: {
-        'Authorization': 'Bearer $token',
+        'Authorization': token != null ? 'Bearer $token' : '',
         'Content-Type': 'application/json',
       },
     );
+
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
+    } else if (response.statusCode == 404) {
+      return null; // Product not found
+    } else {
+      debugPrint('Error fetching product: ${response.body}');
+      return null;
     }
-    return null;
   }
 
-  // Report issue
-  static Future<bool> reportIssue(String qrCode, String issue) async {
-    final token = await StorageService().read('token');
+  /// Add product details after first scan
+  static Future<bool> addProductDetails(String uuid, Map<String, dynamic> details) async {
+    final token = await storage.read("token");
     final response = await http.post(
-      Uri.parse("$baseUrl/assets/$qrCode/report"),
+      Uri.parse("$baseUrl/products/$uuid/details"),
       headers: {
-        'Authorization': 'Bearer $token',
+        'Authorization': token != null ? 'Bearer $token' : '',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode({"issue": issue}),
-    );
-    return response.statusCode == 200;
-  }
-
-  // Log inspection
-  static Future<bool> logInspection(String qrCode, String condition, String remarks) async {
-    final token = await StorageService().read('token');
-    final response = await http.post(
-      Uri.parse("$baseUrl/assets/$qrCode/inspection"),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({"condition": condition, "remarks": remarks}),
+      body: jsonEncode(details),
     );
     return response.statusCode == 200;
   }
@@ -517,5 +507,5 @@ class ApiService {
 
   static Future<void> logout() async {
     await storage.delete("token");
-  }
+  } 
 }
