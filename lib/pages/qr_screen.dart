@@ -191,11 +191,9 @@
 // }
 
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:tms/core/services/api_services.dart';
-import './enterdetails.dart';
-
-import 'assetdetails.dart';
+import '../core/services/api_services.dart';
 
 class QRScannerScreen extends StatefulWidget {
   const QRScannerScreen({super.key});
@@ -209,45 +207,84 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
 
   void _onDetect(BarcodeCapture capture) async {
   if (isProcessing) return;
-
-  if (capture.barcodes.isEmpty) return; // Prevent "No element" error
+  if (capture.barcodes.isEmpty) return;
 
   final qrCode = capture.barcodes.first.rawValue;
-  if (qrCode == null || qrCode.isEmpty) return; // Prevent "Cannot send Null"
+  if (qrCode == null || qrCode.isEmpty) return;
 
   setState(() => isProcessing = true);
 
+  // --- Step 1: Extract UUID from QR code ---
+  String? uuid;
   try {
-    final productData = await ApiService.getProduct(qrCode);
+    final uri = Uri.parse(qrCode);
+    // If QR contains full URL, get last path segment as UUID
+    uuid = uri.pathSegments.isNotEmpty ? uri.pathSegments.last : qrCode;
+  } catch (e) {
+    // If QR is just a raw UUID
+    uuid = qrCode;
+  }
 
-    if (productData != null) {
-      if (productData['details_entered'] == false) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => EnterProductDetailsScreen(uuid: qrCode),
-          ),
-        );
-      } else {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => AssetDetailScreen(asset: productData),
-          ),
-        );
-      }
-    } else {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Product not found")));
-    }
+  if (uuid == null || uuid.isEmpty) {
+    debugPrint('UUID not found in QR code');
+    setState(() => isProcessing = false);
+    return;
+  }
+
+  // --- Step 2: Fetch product from FastAPI ---
+  Map<String, dynamic>? productData;
+  try {
+    productData = await ApiService.getProductByUuid(uuid);
   } catch (e) {
     debugPrint('Error fetching product: $e');
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text("Error fetching product")));
-  } finally {
-    setState(() => isProcessing = false);
   }
+
+  if (!mounted) return;
+
+  // --- Step 3: Show product details or error ---
+  if (productData == null || productData['success'] != true) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Error'),
+        content: const Text('Product not found or invalid QR code'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+        ],
+      ),
+    );
+  } else {
+    final product = productData['product'];
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Product: ${product['uuid']}'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('QR Code URL: ${product['qr_code_url']}'),
+              Text('Details Entered: ${product['details_entered']}'),
+              const SizedBox(height: 8),
+              if (product['details'] != null)
+                Text('Details:\n${jsonEncode(product['details'])}'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
+  // --- Step 4: Reset scanning state ---
+  Future.delayed(const Duration(seconds: 2), () {
+    if (mounted) setState(() => isProcessing = false);
+  });
 }
+
+
 
   @override
   Widget build(BuildContext context) {

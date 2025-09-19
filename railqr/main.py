@@ -115,52 +115,30 @@ async def add_product_details(uuid: str, details: ProductDetails):
 # ---------------- 3. GET PRODUCT (SCANNING) ----------------
 @app.get("/products/{uuid}")
 async def get_product(uuid: str):
-    try:
-        product = products_collection.find_one({"uuid": uuid}, {"_id": 0})
-        if not product:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Product not found"
-            )
+    product = products_collection.find_one({"uuid": uuid})
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
 
-        # Format dates for better readability
-        if product.get("details"):
-            for date_field in ["date_of_manufacture", "date_of_supply", "installation_date"]:
-                if product["details"].get(date_field):
-                    product["details"][date_field] = product["details"][date_field].isoformat()
-            
-            # Format dates in inspections and reviews
-            if product["details"].get("inspections"):
-                for inspection in product["details"]["inspections"]:
-                    inspection["date"] = inspection["date"].isoformat()
-            
-            if product["details"].get("reviews"):
-                for review in product["details"]["reviews"]:
-                    review["date"] = review["date"].isoformat()
+    # Convert ObjectId and datetime fields for JSON
+    product["_id"] = str(product["_id"])
+    if product.get("created_at"):
+        product["created_at"] = product["created_at"].isoformat()
+    if product.get("updated_at"):
+        product["updated_at"] = product["updated_at"].isoformat()
+    
+    if product.get("details"):
+        for key in ["date_of_manufacture", "date_of_supply", "installation_date"]:
+            if product["details"].get(key):
+                product["details"][key] = product["details"][key].isoformat()
+        # Also convert inspections and reviews dates
+        if product["details"].get("inspections"):
+            for ins in product["details"]["inspections"]:
+                ins["date"] = ins["date"].isoformat()
+        if product["details"].get("reviews"):
+            for rev in product["details"]["reviews"]:
+                rev["date"] = rev["date"].isoformat()
 
-        if not product.get("details_entered", False):
-            return {
-                "uuid": product["uuid"],
-                "qr_code_url": product["qr_code_url"],
-                "message": "Details not yet entered. Please add details.",
-                "status": "pending"
-            }
-
-        # Add metadata to response
-        product["metadata"] = {
-            "created_at": product.get("created_at", "").isoformat() if product.get("created_at") else None,
-            "updated_at": product.get("updated_at", "").isoformat() if product.get("updated_at") else None,
-            "total_reviews": len(product["details"].get("reviews", [])),
-            "total_inspections": len(product["details"].get("inspections", []))
-        }
-
-        return product
-    except Exception as e:
-        logger.error(f"Error retrieving product {uuid}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error retrieving product details"
-        )
+    return {"success": True, "product": product}
 
 # ---------------- 4. GET QR CODE IMAGE ----------------
 @app.get("/products/{uuid}/qr")
