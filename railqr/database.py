@@ -1,3 +1,4 @@
+# database.py
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 import os
@@ -23,11 +24,10 @@ class Database:
                 cls.client = MongoClient(MONGO_URI)
                 cls.db = cls.client[DB_NAME]
                 cls.products_collection = cls.db["products"]
-                # Test the connection
-                cls.client.server_info()
-                logger.info("Successfully connected to MongoDB")
+                cls.client.server_info()  # Test connection
+                logger.info("✅ Successfully connected to MongoDB")
         except (ConnectionFailure, ServerSelectionTimeoutError) as e:
-            logger.error(f"Could not connect to MongoDB: {e}")
+            logger.error(f"❌ Could not connect to MongoDB: {e}")
             raise
 
     @classmethod
@@ -35,9 +35,10 @@ class Database:
         if cls.client:
             cls.client.close()
             cls.client = None
-            logger.info("MongoDB connection closed")
+            logger.info("🔌 MongoDB connection closed")
 
-# Initialize database connection
+
+# Initialize connection
 db = Database()
 db.connect()
 products_collection = db.products_collection

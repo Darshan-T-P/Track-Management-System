@@ -1,16 +1,14 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:tms/core/services/storage_services.dart';
 import 'package:tms/data/models/auth_models.dart';
 import 'package:flutter/foundation.dart';
-import '../utils/network_utils.dart';
 
 class ApiService {
-  static const String fastApiUrl = 'http://127.0.0.1:8000'; // FastAPI URL
+  static const String fastApiUrl = 'http://10.73.160.214:8000'; // FastAPI URL
   static const Duration timeout = Duration(seconds: 30);
-  static const String baseUrl =
-      "http://localhost:5000/api"; // for Android emulator
+  static const String baseUrl = "http://10.73.160.214:4000/api";
+ // for Android emulator
   static final storage = StorageService();
 
   static Future<Map<String, dynamic>?> getProductByUuid(String uuid) async {

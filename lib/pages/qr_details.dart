@@ -227,7 +227,7 @@ class _QRDetailsScreenState extends State<QRDetailsScreen> {
                     ),
                   ),
                 );
-              }).toList(),
+              }),
           ],
         ),
       ),

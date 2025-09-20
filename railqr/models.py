@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, conint
 from typing import List, Optional, Literal
@@ -26,7 +26,7 @@ class Review(BaseModel):
     reviewer: str
     date: Optional[datetime]=None
     feedback: str
-    rating: conint(ge=1, le=5) 
+    rating: conint(ge=1, le=5)  # type: ignore
     image: Optional[str] = None
 
 
@@ -161,7 +161,42 @@ def get_product(uuid: str):
     product = products_collection.find_one({"uuid": uuid}, {"_id": 0})
     if not product:
         raise HTTPException(404, "Product not found")
-    return product
+
+    # Convert datetime fields in details
+    if product.get("details"):
+        details = product["details"]
+
+        # Main datetime fields
+        for key in [
+            "date_of_manufacture",
+            "date_of_supply",
+            "installation_date",
+            "warranty_start_date",
+            "warranty_end_date",
+            "last_inspection_date",
+        ]:
+            value = details.get(key)
+            if isinstance(value, datetime):
+                details[key] = value.isoformat()
+
+        # Inspections
+        if details.get("inspections"):
+            for ins in details["inspections"]:
+                date_val = ins.get("date")
+                if isinstance(date_val, datetime):
+                    ins["date"] = date_val.isoformat()
+
+        # Reviews
+        if details.get("reviews"):
+            for rev in details["reviews"]:
+                date_val = rev.get("date")
+                if isinstance(date_val, datetime):
+                    rev["date"] = date_val.isoformat()
+
+    return {
+        "success": True,
+        "product": product
+    }
 
 
 # 4. Get QR code image

@@ -44,87 +44,111 @@ class _HomeScreenState extends State<HomeScreen> {
               ? const Center(child: Text("No user info found"))
               : Column(
                   children: [
-                    // Top Welcome Gradient
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 40),
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Color(0xFF6A11CB), Color(0xFF2575FC)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.only(
-                          bottomLeft: Radius.circular(40),
-                          bottomRight: Radius.circular(40),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          const Text(
-                            "Welcome !!",
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                    // Stack for Welcome + Overlapping QR Button
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        // Welcome Gradient Header
+                        Container(
+                          height: 180,
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 40),
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color.fromARGB(255, 144, 46, 193), Color(0xFF2575FC)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.only(
+                              bottomLeft: Radius.circular(170),
+                              bottomRight: Radius.circular(170),
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            user!['name'],
-                            style: const TextStyle(
-                              fontSize: 18,
-                              color: Colors.white70,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                "Welcome !!",
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  // fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              // const SizedBox(width: 80),
+                              Text(
+                                user!['name'],
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white70,
+                                ),
+                              ), // spacing for QR button
+                            ],
+                          ),
+                        ),
+
+                        // Overlapping QR Scan Button
+                        Positioned(
+                          bottom: -100, // half outside
+                          left: 0,
+                          right: 0,
+                          child: Center(
+                            child: GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const QRScannerScreen(),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                width: 140,
+                                height: 140,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFF2575FC), Color(0xFF6A11CB)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black26,
+                                      blurRadius: 15,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                  ],
+                                ),
+                                child: const Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.qr_code_scanner,
+                                          color: Colors.white, size: 52),
+                                      SizedBox(height: 8),
+                                      Text(
+                                        "Scan QR",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
 
-                    const SizedBox(height: 40),
-
-                    // Big Scan QR Button
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const QRScannerScreen(),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        width: 160,
-                        height: 160,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF2575FC), Color(0xFF6A11CB)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 15,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: const Center(
-                          child: Text(
-                            "Scan QR",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 50),
+                    const SizedBox(height: 100),
 
                     // Reports Section Title
                     Padding(
