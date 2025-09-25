@@ -1,3 +1,13 @@
-const mongoose3 = require('mongoose');
-const dSchema = new mongoose3.Schema({ name:String, code:String, zoneId:{type:mongoose3.Schema.Types.ObjectId,ref:'Zone'}, description:String, status:String, createdAt:{type:Date,default:Date.now}, updatedAt:Date});
-module.exports = mongoose3.model('Division', dSchema);
+import mongoose from "mongoose";
+
+const divisionSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    code: { type: String, required: true },
+    zoneId: { type: mongoose.Schema.Types.ObjectId, ref: "Zone", required: true },
+    headquarters: { type: String },
+  },
+  { timestamps: true }
+);
+
+export default mongoose.model("Division", divisionSchema);

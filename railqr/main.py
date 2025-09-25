@@ -40,39 +40,51 @@ async def shutdown_event():
 
 
 # ---------------- 1. CREATE EMPTY PRODUCT (UUID + QR only) ----------------
-@app.post("/products/init")
-async def init_product():
-    try:
-        product_id = str(uuid4())
-        qr_filename = f"{product_id}.png"
-        qr_path = os.path.join(QR_DIR, qr_filename)
+# @app.post("/products/init")
+# async def init_product():
+#     try:
+#         product_id = str(uuid4())
+#         qr_filename = f"{product_id}.png"
+#         qr_path = os.path.join(QR_DIR, qr_filename)
 
-        qr_data = f"http://127.0.0.1:8000/products/{product_id}"
-        qrcode.make(qr_data).save(qr_path)
+#         qr_data = f"http://127.0.0.1:8000/products/{product_id}"
+#         qrcode.make(qr_data).save(qr_path)
 
-        product_record = {
-            "uuid": product_id,
-            "qr_code_url": f"/products/{product_id}/qr",
-            "details_entered": False,
-            "details": None,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow(),
-        }
-        products_collection.insert_one(product_record)
+#         product_record = {
+#             "uuid": product_id,
+#             "qr_code_url": f"/products/{product_id}/qr",
+#             "details_entered": False,
+#             "details": None,
+#             "created_at": datetime.utcnow(),
+#             "updated_at": datetime.utcnow(),
+#         }
+#         products_collection.insert_one(product_record)
 
-        logger.info(f"Initialized new product {product_id}")
+#         logger.info(f"Initialized new product {product_id}")
 
-        return {
-            "uuid": product_id,
-            "qr_code_url": f"http://127.0.0.1:8000/products/{product_id}/qr",
-            "details_url": f"http://127.0.0.1:8000/products/{product_id}",
-        }
-    except Exception as e:
-        logger.error(f"Error creating product: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error creating product",
-        )
+#         return {
+#             "uuid": product_id,
+#             "qr_code_url": f"http://127.0.0.1:8000/products/{product_id}/qr",
+#             "details_url": f"http://127.0.0.1:8000/products/{product_id}",
+#         }
+#     except Exception as e:
+#         logger.error(f"Error creating product: {e}")
+#         raise HTTPException(
+#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             detail="Error creating product",
+#         )
+@app.get("/products/{uuid}/qr")
+def generate_qr(uuid: str):
+    qr_folder = "qrcodes"
+    os.makedirs(qr_folder, exist_ok=True)
+    file_path = f"{qr_folder}/{uuid}.png"
+
+    # Generate QR if not exists
+    if not os.path.exists(file_path):
+        img = qrcode.make(uuid)
+        img.save(file_path)
+
+    return {"qr_code_url": f"http://localhost:8000/{file_path}"}
 
 
 # ---------------- 2. ENTER DETAILS ----------------

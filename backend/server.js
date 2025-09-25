@@ -1,48 +1,26 @@
-// const express = require('express');
-// const dotenv = require('dotenv');
-// const helmet = require('helmet');
-// const morgan = require('morgan');
-// const cors = require('cors');
-// const path = require('path');
-
-
-// dotenv.config();
-// const connectDB = require('./config/db');
-// const routes = require('./routes');
-
-
-// const app = express();
-// const PORT = process.env.PORT || 4000;
-
-
-// connectDB();
-// app.use(helmet());
-// app.use(cors());
-// app.use(express.json({ limit: '10mb' }));
-// app.use(express.urlencoded({ extended: true }));
-// app.use(morgan('dev'));
-// app.use('/uploads', express.static(path.join(__dirname, '..', process.env.UPLOAD_DIR || 'uploads')));
-// app.use('/api', routes);
-// app.get('/', (req, res) => res.json({ success: true, message: 'SIH PS21 Backend' }));
-// app.use((err, req, res, next) => { console.error(err); res.status(err.status||500).json({ success:false, message: err.message||'Server error' }); });
-
-
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
-
+import morgan from "morgan";
 import authRoutes from "./routes/auth.js";
-import assetRoutes from "./routes/Asset.js"; 
- 
+import productRoutes from "./routes/productRoutes.js";
+import manufacturerRoutes from "./routes/manufacturerRoutes.js";
+import vendorRoutes from "./routes/vendorRoutes.js";
+import batchRoutes from "./routes/batchRoutes.js";
+import { errorHandler } from "./middleware/errorHandler.js";
+
 
 dotenv.config();
-const app = express();
+const app = express();  
 
-
+app.use(morgan("dev"));
 // middleware
 app.use(express.json());
 app.use(cors());
+app.use("/api/manufacturers", manufacturerRoutes);
+app.use("/api/vendors", vendorRoutes);
+app.use("/api/batches", batchRoutes);
 
 // DB connection
 mongoose.connect(process.env.MONGO_URI)
@@ -51,12 +29,17 @@ mongoose.connect(process.env.MONGO_URI)
 
 // test route
 app.get('/', (req, res) => {
-  res.send('Backend is running 🚀');
+  res.send('Backend is running 🚀 Succedfully');
 });
 
 app.use('/api/auth', authRoutes);
-app.use('/api/assets', assetRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/batches", batchRoutes);
 
-const PORT = process.env.PORT || 4000;
+// Global error handler
+app.use(errorHandler);
+
+
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => console.log(`Server running on ${PORT}`));
 

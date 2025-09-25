@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
 import './home.dart';
-import 'assets.dart';
 import 'profile.dart';
 import 'qr_screen.dart';
-import 'report.dart';
+import 'createProduct.dart';
+import 'vendor.dart';
+import 'aireport.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -18,9 +19,10 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _screens = [
     const HomeScreen(),
-    const AssetsScreen(),
+    const VendorListScreen(),
     const QRScannerScreen(),
-    const Report(),
+    const CreateProductScreen(),
+    const AiAnalyticsPage(),
     const ProfileScreen(),
   ];
 
@@ -40,14 +42,19 @@ class _MainScreenState extends State<MainScreen> {
         },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.inventory), label: "Assets"),
-          BottomNavigationBarItem(icon: Icon(Icons.qr_code_scanner), label: "Scan"),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: "Reports"),
+          BottomNavigationBarItem(icon: Icon(Icons.shop), label: "Vendors"),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.qr_code_scanner),
+            label: "Scan",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.create),
+            label: "Create",
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.analytics), label: "AI Analytics"),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
         ],
       ),
     );
   }
 }
-
-
